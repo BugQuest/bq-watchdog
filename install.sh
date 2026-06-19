@@ -60,18 +60,22 @@ CONFIG_FILE="$INSTALL_DIR/config"
 DISCORD_WEBHOOK=""
 HEARTBEAT="0"
 
+# When run via curl|bash, stdin is the pipe — read from /dev/tty instead
+TTY="/dev/tty"
+[[ -t 0 ]] && TTY="/dev/stdin"
+
 # Discord webhook
-read -r -p "Webhook Discord (laisser vide pour désactiver): " DISCORD_WEBHOOK
+read -r -p "Webhook Discord (laisser vide pour désactiver): " DISCORD_WEBHOOK <"$TTY"
 if [[ -n "$DISCORD_WEBHOOK" ]]; then
     ok "Webhook configuré"
-    read -r -p "Envoyer un message 'clean' si aucun finding ? [o/N]: " hb_answer
+    read -r -p "Envoyer un message 'clean' si aucun finding ? [o/N]: " hb_answer <"$TTY"
     [[ "$hb_answer" =~ ^[oOyY] ]] && HEARTBEAT="1"
 else
     warn "Pas de webhook — les résultats seront seulement dans les logs."
 fi
 
 # Cron interval
-read -r -p "Intervalle de vérification en minutes [défaut: 30]: " cron_input
+read -r -p "Intervalle de vérification en minutes [défaut: 30]: " cron_input <"$TTY"
 CRON_INTERVAL="${cron_input:-30}"
 
 # Write config
