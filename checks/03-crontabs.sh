@@ -12,7 +12,7 @@ check_crontabs() {
         "/var/tmp/\.[a-z]"        # hidden dirs in /var/tmp
         "base64.*decode"          # base64 encoded payload
         "python.*-c.*exec"        # python exec
-        "perl.*-e"                # perl one-liner
+        "perl.*-e.*(socket|exec|system|eval|base64|chr\()" # perl one-liner with dangerous functions
         "disown"                  # common in malware crontabs to detach
         "195\.24\.237\.240"       # known C2
     )

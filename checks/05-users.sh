@@ -3,10 +3,15 @@
 
 check_users() {
     # Users with shell access that shouldn't have it
+    # Whitelist: known mail/service accounts that legitimately need a shell
+    local SHELL_WHITELIST="vmail|dovecot|postfix|www-data|git|postgres|mysql|redis|mongodb|nobody|operator"
+
     local SERVICE_USERS_WITH_SHELL=()
     while IFS=: read -r user _ uid _ _ home shell; do
         [[ "$shell" == "/bin/false" || "$shell" == "/usr/sbin/nologin" || "$shell" == "/bin/sync" ]] && continue
-        [[ "$uid" -lt 1000 && "$uid" -ne 0 ]] && SERVICE_USERS_WITH_SHELL+=("$user (uid=$uid, shell=$shell)")
+        [[ "$uid" -lt 1000 && "$uid" -ne 0 ]] || continue
+        echo "$user" | grep -qE "^($SHELL_WHITELIST)$" && continue
+        SERVICE_USERS_WITH_SHELL+=("$user (uid=$uid, shell=$shell)")
     done < /etc/passwd
 
     for u in "${SERVICE_USERS_WITH_SHELL[@]}"; do

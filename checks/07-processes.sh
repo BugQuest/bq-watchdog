@@ -39,11 +39,22 @@ check_processes() {
     done < <(ps aux --no-headers 2>/dev/null)
 
     # Known miner process names
-    local MINER_NAMES=("xmrig" "xmr-stak" "minerd" "cpuminer" "cryptonight" "kswapd0" "kworkerds")
+    # Note: kswapd0 is a legitimate kernel thread when shown with brackets [kswapd0].
+    # Only flag if it runs as a userspace process (no brackets, non-zero exe path).
+    local MINER_NAMES=("xmrig" "xmr-stak" "minerd" "cpuminer" "cryptonight" "kworkerds")
     for name in "${MINER_NAMES[@]}"; do
         if pgrep -x "$name" &>/dev/null; then
             finding critical "Processus mineur connu détecté: $name" \
                 "$(pgrep -a "$name" 2>/dev/null)"
         fi
     done
+
+    # kswapd0 specifically: kernel thread if exe is empty, miner if it has a real path
+    while IFS= read -r pid; do
+        local exe; exe=$(readlink -f "/proc/$pid/exe" 2>/dev/null)
+        if [[ -n "$exe" && "$exe" != *"(deleted)"* ]]; then
+            finding critical "kswapd0 userspace détecté — probable mineur XMRig" \
+                "PID: $pid | Binaire: $exe\n[kswapd0] avec crochets = kernel légitime. Sans crochets et avec binaire = mineur."
+        fi
+    done < <(pgrep -x "kswapd0" 2>/dev/null || true)
 }
