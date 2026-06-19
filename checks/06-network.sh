@@ -37,7 +37,7 @@ check_network() {
         while IFS= read -r line; do
             local pid; pid=$(echo "$line" | grep -oP 'pid=\K[0-9]+')
             [[ -z "$pid" ]] && continue
-            local exe; exe=$(readlink -f "/proc/$pid/exe" 2>/dev/null)
+            local exe; exe=$(readlink "/proc/$pid/exe" 2>/dev/null)
             if echo "$exe" | grep -qE '^/tmp/|^/var/tmp/|^/dev/shm/'; then
                 finding critical "Processus depuis répertoire temporaire avec connexion réseau" \
                     "PID: $pid | Binaire: $exe\n$line"

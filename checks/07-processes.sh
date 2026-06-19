@@ -4,7 +4,7 @@
 check_processes() {
     # Processes running from temp directories
     while IFS= read -r pid; do
-        local exe; exe=$(readlink -f "/proc/$pid/exe" 2>/dev/null)
+        local exe; exe=$(readlink "/proc/$pid/exe" 2>/dev/null)
         [[ -z "$exe" ]] && continue
         if echo "$exe" | grep -qE '^/tmp/|^/var/tmp/|^/dev/shm/'; then
             local user; user=$(stat -c '%U' "/proc/$pid" 2>/dev/null)
@@ -20,7 +20,7 @@ check_processes() {
         local cpu; cpu=$(echo "$line" | awk '{print $3}' | cut -d. -f1)
         [[ "$cpu" -lt 50 ]] && continue  # only flag >50% CPU
 
-        local exe; exe=$(readlink -f "/proc/$pid/exe" 2>/dev/null)
+        local exe; exe=$(readlink "/proc/$pid/exe" 2>/dev/null)
         if echo "$exe" | grep -q "(deleted)"; then
             finding warning "Processus haute CPU avec binaire supprimé (running in memory)" \
                 "PID: $pid | CPU: ${cpu}%\nBinaire (supprimé): $exe\nTechnique courante pour dissimuler les mineurs."
@@ -32,7 +32,7 @@ check_processes() {
         local cmd; cmd=$(echo "$line" | awk '{print $11}' | xargs basename 2>/dev/null)
         if echo "$cmd" | grep -qE '^[0-9a-f]{8}$'; then
             local pid; pid=$(echo "$line" | awk '{print $2}')
-            local exe; exe=$(readlink -f "/proc/$pid/exe" 2>/dev/null)
+            local exe; exe=$(readlink "/proc/$pid/exe" 2>/dev/null)
             finding critical "Processus au nom hexadécimal obfusqué (pattern color1337)" \
                 "Commande: $cmd | PID: $pid\nBinaire: $exe\nLes mineurs Diicot utilisent des noms à 8 caractères hex (ex: fd93fba7, c90a5f7e)."
         fi
@@ -49,9 +49,11 @@ check_processes() {
         fi
     done
 
-    # kswapd0 specifically: kernel thread if exe is empty, miner if it has a real path
+    # kswapd0 specifically: kernel threads have no /proc/<pid>/exe symlink.
+    # readlink (without -f) returns empty for missing/broken symlinks, unlike
+    # readlink -f which echoes the input path when the target doesn't exist.
     while IFS= read -r pid; do
-        local exe; exe=$(readlink -f "/proc/$pid/exe" 2>/dev/null)
+        local exe; exe=$(readlink "/proc/$pid/exe" 2>/dev/null)
         if [[ -n "$exe" && "$exe" != *"(deleted)"* ]]; then
             finding critical "kswapd0 userspace détecté — probable mineur XMRig" \
                 "PID: $pid | Binaire: $exe\n[kswapd0] avec crochets = kernel légitime. Sans crochets et avec binaire = mineur."
