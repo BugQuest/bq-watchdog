@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Update version in watchdog.sh
+        run: sed -i "s/BQ_VERSION=\"1.0.0\"/BQ_VERSION=\"${{ steps.version.outputs.VERSION }}\"/" watchdog.sh
+
+      - name: Create tarball
+        run: |
+          mkdir -p dist
+          tar -czf dist/bq-watchdog-${{ steps.version.outputs.VERSION }}.tar.gz \
+            --transform "s|^\.|bq-watchdog-${{ steps.version.outputs.VERSION }}|" \
+            --exclude='.git' --exclude='dist' --exclude='.github' \
+            .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.VERSION }}
+          name: "bq-watchdog ${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## Installation
+
+            ```bash
+            curl -fsSL https://github.com/BugQuest/bq-watchdog/releases/download/${{ steps.version.outputs.VERSION }}/install.sh | sudo bash
+            ```
+
+            ## Mise à jour
+
+            Relancer la commande d'installation — elle remplace la version existante.
+          files: |
+            dist/bq-watchdog-${{ steps.version.outputs.VERSION }}.tar.gz
+            install.sh
+          draft: false
+          prerelease: false

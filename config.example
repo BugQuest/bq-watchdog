@@ -1,0 +1,15 @@
+# bq-watchdog configuration
+# Copier en 'config' et adapter
+
+# Discord webhook URL (laisser vide pour désactiver)
+DISCORD_WEBHOOK=""
+
+# Envoyer un message "clean" si aucun finding (0=non, 1=oui)
+HEARTBEAT="0"
+
+# Fichier de log
+LOG_FILE="/var/log/bq-watchdog.log"
+
+# Répertoires (ne pas modifier sauf installation custom)
+# CHECKS_DIR="/opt/bq-watchdog/checks"
+# LIB_DIR="/opt/bq-watchdog/lib"
