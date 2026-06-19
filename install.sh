@@ -89,11 +89,16 @@ EOF
 chmod 600 "$CONFIG_FILE"
 ok "Config écrite dans $CONFIG_FILE"
 
-# Cron
-CRON_LINE="*/${CRON_INTERVAL} * * * * root ${INSTALL_DIR}/watchdog.sh"
-echo "$CRON_LINE" > /etc/cron.d/bq-watchdog
+# Cron — audit + weekly auto-update
+cat > /etc/cron.d/bq-watchdog <<CRONEOF
+# bq-watchdog — audit toutes les ${CRON_INTERVAL} minutes
+*/${CRON_INTERVAL} * * * * root ${INSTALL_DIR}/watchdog.sh
+
+# bq-watchdog — mise à jour automatique chaque lundi à 3h
+0 3 * * 1 root ${INSTALL_DIR}/watchdog.sh --update
+CRONEOF
 chmod 644 /etc/cron.d/bq-watchdog
-ok "Cron installé: toutes les ${CRON_INTERVAL} minutes"
+ok "Cron installé: audit toutes les ${CRON_INTERVAL} min, update auto chaque lundi 3h"
 
 # Log file
 touch /var/log/bq-watchdog.log
@@ -118,4 +123,5 @@ echo "  Logs      : /var/log/bq-watchdog.log"
 echo "  Config    : $CONFIG_FILE"
 echo "  Prochain  : dans $CRON_INTERVAL minutes (cron)"
 echo "  Manuel    : sudo $INSTALL_DIR/watchdog.sh"
+echo "  Update    : sudo $INSTALL_DIR/watchdog.sh --update"
 echo ""
